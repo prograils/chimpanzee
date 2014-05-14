@@ -6,30 +6,37 @@ module Chimpanzee
 
       def export_survey_responses_to_csv_array(survey_id, survey=nil)
         survey ||= self.get_survey_details survey_id: survey_id
-        respondents = self.get_respondent_list survey_id: survey_id
+        respondents = self.get_respondent_list survey_id: survey_id, fields: ['date_start', 'date_modified']
         respondents = self.extract_respondents(respondents)
         questions = self.map_questions(survey)
         answers = map_answers(survey)
         responses = self.get_responses  survey_id: survey_id,
-          respondent_ids: respondents
+          respondent_ids: respondents.keys
         responses = self.map_responses(responses, answers)
-        build_csv_array(questions, answers, responses)
+        build_csv_array(questions, answers, responses, respondents)
       end
 
       ## builds CSV array ready to be exported to ie. Excel
       ## First row acts as title row
-      def build_csv_array(questions, answers, responses)
+      def build_csv_array(questions, answers, responses, respondents)
         csv_array = []
         if questions
-          title_row = ['respondent id']
+          title_row = []
+          respondents_order = []
+          respondents_fields = respondents.values.first
+          respondents_fields.keys.each{|k| respondents_order << k }
           questions_order = []
+          title_row.concat respondents_order
           questions.each.each do |key, q|
             title_row << q
             questions_order << key
           end
           csv_array << title_row
           responses.each do |key, response|
-            row = [key]
+            row = []
+            respondents_order.each do |k|
+              row << respondents[key][k]
+            end
             questions_order.each do |qid|
               row << (response[qid] || []).join(", ")
             end
@@ -62,13 +69,13 @@ module Chimpanzee
       end
 
       def extract_respondents(respondents)
-        respondents_array = []
+        respondents_hash = {}
         if respondents && respondents['data'].present? && respondents['data']['respondents'].present?
           respondents['data']['respondents'].each do |respondent|
-            respondents_array << respondent['respondent_id']#.to_i
+            respondents_hash[respondent['respondent_id']] = respondent
           end
         end
-        respondents_array
+        respondents_hash
       end
 
       def map_questions(survey)
