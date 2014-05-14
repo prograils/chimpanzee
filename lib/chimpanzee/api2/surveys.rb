@@ -24,23 +24,25 @@ module Chimpanzee
           title_row = []
           respondents_order = []
           respondents_fields = respondents.values.first
-          respondents_fields.keys.each{|k| respondents_order << k }
-          questions_order = []
-          title_row.concat respondents_order
-          questions.each.each do |key, q|
-            title_row << q
-            questions_order << key
-          end
-          csv_array << title_row
-          responses.each do |key, response|
-            row = []
-            respondents_order.each do |k|
-              row << respondents[key][k]
+          if respondents_fields && !respondents_fields.empty?
+            respondents_fields.keys.each{|k| respondents_order << k }
+            questions_order = []
+            title_row.concat respondents_order
+            questions.each.each do |key, q|
+              title_row << q
+              questions_order << key
             end
-            questions_order.each do |qid|
-              row << (response[qid] || []).join(", ")
+            csv_array << title_row
+            responses.each do |key, response|
+              row = []
+              respondents_order.each do |k|
+                row << respondents[key][k]
+              end
+              questions_order.each do |qid|
+                row << (response[qid] || []).join(", ")
+              end
+              csv_array << row
             end
-            csv_array << row
           end
         end
         csv_array
