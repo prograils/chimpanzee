@@ -5,14 +5,15 @@ module Chimpanzee
       include MissingMethod
 
       def export_survey_responses_to_csv_array(survey_id, survey=nil)
-        survey ||= self.get_survey_details survey_id: survey_id
-        respondents = self.get_respondent_list survey_id: survey_id, fields: ['date_start', 'date_modified']
-        respondents = self.extract_respondents(respondents)
-        questions = self.map_questions(survey)
+        survey_id = survey_id.to_s
+        survey ||= get_survey_details survey_id: survey_id
+        respondents = get_respondent_list survey_id: survey_id,
+                                          fields: ['date_start', 'date_modified']
+        respondents = extract_respondents(respondents)
+        questions = map_questions(survey)
         answers = map_answers(survey)
-        responses = self.get_responses  survey_id: survey_id,
-          respondent_ids: respondents.keys
-        responses = self.map_responses(responses, answers)
+        responses = get_responses_in_batches(survey_id, respondents.keys)
+        responses = map_responses(responses, answers)
         build_csv_array(questions, answers, responses, respondents)
       end
 
@@ -66,7 +67,6 @@ module Chimpanzee
             responses[response['respondent_id']] = response_hash
           end
         end
-
         responses
       end
 
@@ -104,6 +104,18 @@ module Chimpanzee
           end
         end
         answers
+      end
+
+      ## SurveyMonkey API allows fetching max of 100 responses per request
+      def get_responses_in_batches(survey_id, respondent_ids)
+        ret = { 'data' => [] }
+        while respondent_ids.count > 0
+          respondent_ids_batch = respondent_ids.shift(100)
+          responses = get_responses survey_id: survey_id,
+                                    respondent_ids: respondent_ids_batch
+          ret['data'].concat responses['data'] if responses
+        end
+        ret
       end
     end
   end
