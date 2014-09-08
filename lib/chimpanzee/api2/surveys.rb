@@ -56,15 +56,17 @@ module Chimpanzee
         responses = {}
         if responses_raw && responses_raw['data'].present?
           responses_raw['data'].each do |response|
-            response_hash = {}
-            response['questions'].each do |question|
-              answer_array = []
-              question['answers'].each do |answer|
-                answer_array << (answer['text'] || answers[answer['col']])
+            if response && response['questions']
+              response_hash = {}
+              response['questions'].each do |question|
+                answer_array = []
+                question['answers'].each do |answer|
+                  answer_array << (answer['text'] || answers[answer['col']])
+                end
+                response_hash[question['question_id']] = answer_array
               end
-              response_hash[question['question_id']] = answer_array
+              responses[response['respondent_id']] = response_hash
             end
-            responses[response['respondent_id']] = response_hash
           end
         end
         responses
