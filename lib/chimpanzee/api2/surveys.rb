@@ -84,6 +84,14 @@ module Chimpanzee
 
       def map_questions(survey)
         questions = {}
+
+	# include custom variables just like any other questions
+        if survey && survey['data'].present? && survey['data']['custom_variables'].present?
+          survey['data']['custom_variables'].each do |custom_variable|
+             questions[custom_variable['question_id']] = custom_variable['variable_label']
+          end
+	end
+
         if survey && survey['data'].present? && survey['data']['pages'].present?
           survey['data']['pages'].each do |page|
             page['questions'].each do |question|
